@@ -8,42 +8,35 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-
-	"ti-ticket/utils"
 )
 
 var (
-	_globaldb     *gorm.DB
-	_password_len int = 16
-    _db_addr      string = "127.0.0.1:4000"
+	_globaldb *gorm.DB
+	_db_addr  string = "127.0.0.1:4000"
 )
 
-func InitConnect() {
+func InitConnect() error {
 	user := os.Getenv("DATABASE_USER")
 	passwd := os.Getenv("DATABASE_PASSWD")
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s)/mysql?charset=utf8mb4&parseTime=True&loc=Local",
 		user,
 		passwd,
-        _db_addr)
+		_db_addr)
 
 	log.Printf("db dsn: %s", dsn)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_globaldb = db
 	log.Print("db connected success.")
+	return nil
 }
 
-func getDB(ctx context.Context) *gorm.DB {
-	return _globaldb.WithContext(ctx)
-}
-
-func AddUser(usr string) (passwd string, err error) {
-	secret := utils.GetSecret(_password_len)
-	sql := fmt.Sprintf("CREATE USER '%s'@'%%' IDENTIFIED BY '%s';", usr, secret)
-    log.Print("Exec: ", sql)
+func AddUser(usr string, passwd string) (err error) {
+	sql := fmt.Sprintf("CREATE USER '%s'@'%%' IDENTIFIED BY '%s';", usr, passwd)
+	log.Print("Exec: ", sql, "\n")
 
 	db := getDB(context.Background())
 	db.Exec(sql)
@@ -51,15 +44,48 @@ func AddUser(usr string) (passwd string, err error) {
 	// privilege
 	// db.Exec(fmt.Sprintf("GRANT ALL ON *.* TO '%s'@'%%'", usr))
 	// db.Exec("flush privileges;")
-	return secret, nil
+	return nil
 }
 
-func DeleteUser(usr string) (err error) { 
-    sql := fmt.Sprintf("DROP USER '%s'@'%%';", usr)
-    log.Print("Exec: ", sql)
+func UpdateUser(usr string, passwd string) (err error) {
+	if !existUser(usr) {
+		return AddUser(usr, passwd)
+	}
+	sql := fmt.Sprintf("ALTER USER '%s'@'%%' IDENTIFIED BY '%s';", usr, passwd)
+	log.Print("Exec: ", sql)
 
-    db := getDB(context.Background())
+	db := getDB(context.Background())
 	db.Exec(sql)
 
-    return nil
+	return nil
+}
+
+func DeleteUser(usr string) (err error) {
+	sql := fmt.Sprintf("DROP USER '%s'@'%%';", usr)
+	log.Print("Exec: ", sql, "\n")
+
+	db := getDB(context.Background())
+	db.Exec(sql)
+
+	return nil
+}
+
+type temporary_user struct {
+	gorm.Model
+	User        string
+	Select_priv string
+	Insert_priv string
+	Update_priv string
+	Delete_priv string
+}
+
+func getDB(ctx context.Context) *gorm.DB {
+	return _globaldb.WithContext(ctx)
+}
+
+func existUser(usr string) bool {
+	var u temporary_user
+	db := getDB(context.Background())
+	db.Table("user").Where("User = ?", usr).Scan(&u)
+	return u.User == usr
 }
