@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	_globaldb *gorm.DB
-	_db_addr  string = "127.0.0.1:4000"
+	_globaldb *gorm.DB = nil
+	_db_addr  string   = "127.0.0.1:4000"
 )
 
 func InitConnect() error {
@@ -39,7 +39,9 @@ func AddUser(usr string, passwd string) (err error) {
 	log.Print("Exec: ", sql, "\n")
 
 	db := getDB(context.Background())
-	db.Exec(sql)
+	if db != nil {
+		db.Exec(sql)
+	}
 
 	// privilege
 	// db.Exec(fmt.Sprintf("GRANT ALL ON *.* TO '%s'@'%%'", usr))
@@ -55,8 +57,9 @@ func UpdateUser(usr string, passwd string) (err error) {
 	log.Print("Exec: ", sql)
 
 	db := getDB(context.Background())
-	db.Exec(sql)
-
+	if db != nil {
+		db.Exec(sql)
+	}
 	return nil
 }
 
@@ -65,9 +68,39 @@ func DeleteUser(usr string) (err error) {
 	log.Print("Exec: ", sql, "\n")
 
 	db := getDB(context.Background())
-	db.Exec(sql)
-
+	if db != nil {
+		db.Exec(sql)
+	}
 	return nil
+}
+
+func Privilege_table() map[int]string {
+	return map[int]string{
+		1: "SELECT",
+		2: "INSERT",
+		4: "UPDATE",
+		8: "DELETE",
+	}
+}
+
+const _grant_template = "GRANT %s ON *.* TO '%s'@'%%';"
+
+func GrantUser(usr string, code int) (string, error) {
+	pri_str := ""
+	for mask, priv := range Privilege_table() {
+		if (mask & code) != 0 {
+			pri_str += "," + priv
+		}
+	}
+	sql := fmt.Sprintf(_grant_template, pri_str[1:], usr)
+	log.Print(sql, "\n")
+
+	db := getDB(context.Background())
+	if db != nil {
+		db.Exec(sql)
+		db.Exec("flush privileges;")
+	}
+	return pri_str, nil
 }
 
 type temporary_user struct {
@@ -80,12 +113,18 @@ type temporary_user struct {
 }
 
 func getDB(ctx context.Context) *gorm.DB {
+	if _globaldb == nil {
+		log.Print("Database not ready")
+		return nil
+	}
 	return _globaldb.WithContext(ctx)
 }
 
 func existUser(usr string) bool {
 	var u temporary_user
 	db := getDB(context.Background())
-	db.Table("user").Where("User = ?", usr).Scan(&u)
+	if db != nil {
+		db.Table("user").Where("User = ?", usr).Scan(&u)
+	}
 	return u.User == usr
 }

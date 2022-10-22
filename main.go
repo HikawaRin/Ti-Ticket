@@ -29,8 +29,13 @@ func main() {
 	router.GET("/login", oauth.Authorization)
 	router.GET("/oauth/redirect", oauth.Authorized)
 	router.GET("/fetch_passwd", oauth.FetchPasswd)
+	router.POST("/require/grant", oauth.RequireGrant)
 
-	router.GET("/debug/latest_token")
-	router.GET("/debug/drop_me")
+	router.GET("/debug/latest_token", oauth.DEBUGToken)
+
+	router.POST("/admin/grant", oauth.GrantPrivilege)
+	router.GET("/admin/show/requestes", oauth.ShowRequestes)
+	router.POST("/admin/handle/request", oauth.HandleRequest)
+	router.POST("/admin/drop", oauth.DropUser)
 	log.Fatal(router.Run(":8080"))
 }
