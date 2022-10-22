@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"log"
 	"time"
 
 	"ti-ticket/DAO"
@@ -35,7 +34,6 @@ func AddUser(account string) (*User, bool) {
 
 func FetchUser(uid string) (*User, bool) {
 	for it := 0; it < cp; it++ {
-		log.Print(uid, ": ", cache[it].Uid, "-", cache[it].Account)
 		if cache[it].Uid == uid {
 			refreshUser(&cache[it])
 			return &cache[it], true

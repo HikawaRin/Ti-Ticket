@@ -95,7 +95,6 @@ type githubOAuthAccessResponse struct {
 
 func requestGithubToken(code string) (string, error) {
 	requestURL := fmt.Sprintf(_github_authtoken_uri, _github_client_id, _github_client_secret, code)
-	log.Print(requestURL, "\n")
 	request, err := http.NewRequest(http.MethodGet, requestURL, nil)
 	if err != nil {
 		return "", err
