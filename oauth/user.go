@@ -37,26 +37,26 @@ func Authorization(c *gin.Context) {
 
 func Authorized(c *gin.Context) {
 	// mask for test
-	code, ok := c.GetQuery("code")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, "Invalid Request.")
-		return
-	}
+	// code, ok := c.GetQuery("code")
+	// if !ok {
+	// 	c.JSON(http.StatusUnauthorized, "Invalid Request.")
+	// 	return
+	// }
 
-	accessToken, err := requestGithubToken(code)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, fmt.Sprint("Unauthorized with Github. %v", err.Error()))
-		return
-	}
+	// accessToken, err := requestGithubToken(code)
+	// if err != nil {
+	// 	c.JSON(http.StatusUnauthorized, fmt.Sprint("Unauthorized with Github. %v", err.Error()))
+	// 	return
+	// }
 
-	user, err := requestGithubUser(accessToken)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, "Unable get Github user.")
-		return
-	}
+	// user, err := requestGithubUser(accessToken)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, "Unable get Github user.")
+	// 	return
+	// }
 
-	up, ok := cache.AddUser(user.Email)
-	// up, ok := cache.AddUser("dummy@dummy.com")
+	// up, ok := cache.AddUser(user.Email)
+	up, ok := cache.AddUser("dummy@dummy.com")
 	if !ok {
 		c.JSON(http.StatusInternalServerError, "Unable to add user.")
 		return
