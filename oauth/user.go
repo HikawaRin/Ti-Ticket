@@ -37,26 +37,32 @@ func Authorization(c *gin.Context) {
 
 func Authorized(c *gin.Context) {
 	// mask for test
-	// code, ok := c.GetQuery("code")
-	// if !ok {
-	// 	c.JSON(http.StatusUnauthorized, "Invalid Request.")
-	// 	return
-	// }
+	var up *cache.User
+	var ok bool
+	if os.Getenv("DEBUG_TITICKET") == "No" {
+		code, ok := c.GetQuery("code")
+		if !ok {
+			c.JSON(http.StatusUnauthorized, "Invalid Request.")
+			return
+		}
 
-	// accessToken, err := requestGithubToken(code)
-	// if err != nil {
-	// 	c.JSON(http.StatusUnauthorized, fmt.Sprint("Unauthorized with Github. %v", err.Error()))
-	// 	return
-	// }
+		accessToken, err := requestGithubToken(code)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, fmt.Sprint("Unauthorized with Github. %v", err.Error()))
+			return
+		}
 
-	// user, err := requestGithubUser(accessToken)
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, "Unable get Github user.")
-	// 	return
-	// }
+		user, err := requestGithubUser(accessToken)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "Unable get Github user.")
+			return
+		}
 
-	// up, ok := cache.AddUser(user.Email)
-	up, ok := cache.AddUser("dummy@dummy.com")
+		up, ok = cache.AddUser(user.Email)
+	} else {
+		up, ok = cache.AddUser("HikawaRin@outlook.com")
+	}
+
 	if !ok {
 		c.JSON(http.StatusInternalServerError, "Unable to add user.")
 		return
@@ -200,18 +206,28 @@ func DEBUGToken(c *gin.Context) {
 	})
 }
 
-func DEBUGDropUser(c *gin.Context) {
+func DropUser(c *gin.Context) {
 	bearToken, ok := extractToken(c.Request.Header.Get("Authorization"))
 	if !ok {
 		c.JSON(http.StatusUnauthorized, "Invalid token format.")
 		return
 	}
 	claims, err := vertifyToken(bearToken)
-	if err != nil {
+	if err != nil || claims.Account == "" {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return
 	}
-	user, ok := cache.FetchUser(claims.Id)
+	// user should be admin
+
+	type victim struct {
+		Account string `json:"Account"`
+	}
+	var v victim
+	if err := c.ShouldBindJSON(&v); err != nil {
+		c.JSON(http.StatusBadRequest, "Post Body format error")
+		return
+	}
+	user, ok := cache.FetchUserByAccount(v.Account)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, "Invalid token content")
 		return

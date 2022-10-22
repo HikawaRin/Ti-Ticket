@@ -42,6 +42,16 @@ func FetchUser(uid string) (*User, bool) {
 	return nil, false
 }
 
+func FetchUserByAccount(account string) (*User, bool) {
+	for it := 0; it < cp; it++ {
+		if cache[it].Account == account {
+			refreshUser(&cache[it])
+			return &cache[it], true
+		}
+	}
+	return nil, false
+}
+
 func DropUser(u *User) {
 	DAO.DeleteUser((*u).Account)
 	// Remove from cache
