@@ -10,7 +10,7 @@ import (
 	"github.com/twinj/uuid"
 )
 
-const _expire_gap = time.Minute * 5
+const _expire_gap = time.Minute * 3
 
 var (
 	cache [32]User
@@ -42,6 +42,11 @@ func FetchUser(uid string) (*User, bool) {
 		}
 	}
 	return nil, false
+}
+
+func DropUser(u *User) {
+	DAO.DeleteUser((*u).Account)
+	// Remove from cache
 }
 
 type User struct {

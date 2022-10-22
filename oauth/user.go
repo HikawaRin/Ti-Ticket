@@ -200,3 +200,25 @@ func DEBUGToken(c *gin.Context) {
 		"token": _latest_token,
 	})
 }
+
+func DEBUGDropUser(c *gin.Context) {
+	bearToken, ok := extractToken(c.Request.Header.Get("Authorization"))
+	if !ok {
+		c.JSON(http.StatusUnauthorized, "Invalid token format.")
+		return
+	}
+	claims, err := vertifyToken(bearToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+	user, ok := cache.FetchUser(claims.Id)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, "Invalid token content")
+		return
+	}
+	cache.DropUser(user)
+	c.JSON(http.StatusOK, map[string]string{
+		"Account": user.Account,
+	})
+}
