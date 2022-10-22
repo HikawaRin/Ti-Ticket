@@ -24,6 +24,9 @@ var (
 	_github_api_uri       string = "https://api.github.com/"
 
 	httpClient http.Client = http.Client{}
+
+	// For Debug
+	_latest_token string
 )
 
 func Authorization(c *gin.Context) {
@@ -66,6 +69,7 @@ func Authorized(c *gin.Context) {
 	c.JSON(http.StatusOK, map[string]string{
 		"token": token,
 	})
+	_latest_token = token
 }
 
 func FetchPasswd(c *gin.Context) {
@@ -188,4 +192,10 @@ func vertifyToken(bearToken string) (*titicketClaims, error) {
 		}
 	}
 	return claims, nil
+}
+
+func DEBUGToken(c *gin.Context) {
+	c.JSON(http.StatusOK, map[string]string{
+		"token": _latest_token,
+	})
 }
